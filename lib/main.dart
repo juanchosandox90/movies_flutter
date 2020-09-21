@@ -4,6 +4,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:movies_flutter/constants/constants.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:intl/intl.dart';
 
 void main() => runApp(MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -24,6 +25,8 @@ class _MyMovieApp extends State<MyMovieApp> {
   Movie popularMovies;
 
   int heroTag = 0;
+
+  int _currentIndex = 0;
 
   @override
   void initState() {
@@ -113,7 +116,8 @@ class _MyMovieApp extends State<MyMovieApp> {
               Padding(
                 padding: EdgeInsets.only(left: 6.0, top: 2.0),
                 child: Text(
-                  movieItem.releaseDate,
+                  DateFormat('yyyy')
+                      .format(DateTime.parse(movieItem.releaseDate)),
                   style: TextStyle(fontSize: 8.0),
                 ),
               )
@@ -221,6 +225,29 @@ class _MyMovieApp extends State<MyMovieApp> {
             _buildMoviesListView(topratedMovies, 'TOP RATED MOVIE'),
           ],
         ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        fixedColor: Colors.lightBlue,
+        onTap: (int index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.local_movies),
+            label: 'All Movies',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.tag_faces),
+            label: 'Tickets',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Account',
+          ),
+        ],
       ),
     );
   }
