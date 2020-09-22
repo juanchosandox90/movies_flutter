@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:movies_flutter/models/movieCast.dart';
 import 'package:movies_flutter/models/movieModel.dart';
 import 'package:movies_flutter/models/movieDetailsModel.dart';
 import 'package:movies_flutter/constants/constants.dart';
 import 'package:http/http.dart' as http;
+import 'package:movies_flutter/models/castcrew.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
 
@@ -17,13 +19,19 @@ class MovieDetail extends StatefulWidget {
 
 class _MovieDetails extends State<MovieDetail> {
   String movieDetailUrl;
+  String movieCastUrl;
   MovieDetailsModel movieDetailsModel;
+  MovieCastModel movieCastModel;
+  List<CastCrew> castCrew = new List<CastCrew>();
+  bool isLoading;
 
   @override
   void initState() {
     super.initState();
     movieDetailUrl = "$baseUrl${widget.movie.id}?api_key=$apiKey";
+    movieCastUrl = "$baseUrl${widget.movie.id}/credits?api_key=$apiKey";
     _fetchMovieDetailUrl();
+    _fetchMovieCastUrl();
   }
 
   void _fetchMovieDetailUrl() async {
@@ -34,12 +42,102 @@ class _MovieDetails extends State<MovieDetail> {
     });
   }
 
+  void _fetchMovieCastUrl() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    var response = await http.get(movieCastUrl);
+    var decodeJson = jsonDecode(response.body);
+    movieCastModel = MovieCastModel.fromJson(decodeJson);
+
+    movieCastModel.cast.forEach((c) => castCrew.add(CastCrew(
+        id: c.castId,
+        name: c.name,
+        subName: c.character,
+        imagePath: c.profilePath,
+        personType: "Cast")));
+
+    movieCastModel.crew.forEach((c) => castCrew.add(CastCrew(
+        id: c.id,
+        name: c.name,
+        subName: c.job,
+        imagePath: c.profilePath,
+        personType: "Crew")));
+
+    setState(() {
+      isLoading = false;
+    });
+  }
+
   String _getMovieDuration(int runtime) {
     if (runtime == null) return 'No data';
     double movieHours = runtime / 60.0;
     int movieMinutes = ((movieHours - movieHours.floor()) * 60).round();
     return "${movieHours.floor()}h ${movieMinutes}min";
   }
+
+  Widget _buildCastCrewContent(String personType) => Container(
+        height: 115.0,
+        padding: EdgeInsets.only(top: 8.0),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0, bottom: 8.0),
+              child: Text(
+                personType,
+                style: TextStyle(
+                    fontSize: 12.0,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[400]),
+              ),
+            ),
+            Flexible(
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: isLoading
+                    ? [Center(child: CircularProgressIndicator())]
+                    : castCrew
+                        .where((f) => f.personType == personType)
+                        .map(
+                          (c) => Padding(
+                              padding: EdgeInsets.only(left: 4.0),
+                              child: Container(
+                                  width: 65.0,
+                                  child: Column(
+                                    children: [
+                                      CircleAvatar(
+                                          radius: 28.0,
+                                          backgroundImage: c.imagePath != null
+                                              ? NetworkImage(
+                                                  '${baseImagesUrl}w154${c.imagePath}')
+                                              : AssetImage(
+                                                  'assets/nobody.jpg')),
+                                      Padding(
+                                        padding:
+                                            const EdgeInsets.only(top: 4.0),
+                                        child: Text(c.name,
+                                            style: TextStyle(
+                                                fontSize: 8.0,
+                                                fontWeight: FontWeight.bold),
+                                            overflow: TextOverflow.ellipsis),
+                                      ),
+                                      Text(c.subName,
+                                          style: TextStyle(fontSize: 8.0),
+                                          overflow: TextOverflow.ellipsis)
+                                    ],
+                                  ))),
+                        )
+                        .toList(),
+              ),
+            )
+          ],
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -128,7 +226,7 @@ class _MovieDetails extends State<MovieDetail> {
       ),
     );
 
-    final midleContent = Container(
+    final middleContent = Container(
       padding: EdgeInsets.only(left: 8.0, right: 8.0, top: 8.0),
       child: Column(
         children: [
@@ -163,7 +261,14 @@ class _MovieDetails extends State<MovieDetail> {
         centerTitle: true,
       ),
       body: ListView(
-        children: [moviePoster, movieTitle, movieTickets, midleContent],
+        children: [
+          moviePoster,
+          movieTitle,
+          movieTickets,
+          middleContent,
+          _buildCastCrewContent("Cast"),
+          _buildCastCrewContent("Crew")
+        ],
       ),
     );
   }

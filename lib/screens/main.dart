@@ -169,7 +169,7 @@ class _MyMovieApp extends State<MyMovieApp> {
       );
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context)  {
     return Scaffold(
       appBar: AppBar(
         elevation: 0.0,
