@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:movies_flutter/models/movieModel.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:movies_flutter/constants/constants.dart';
+import 'package:movies_flutter/screens/movie_details.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
@@ -83,12 +84,18 @@ class _MyMovieApp extends State<MyMovieApp> {
 
   Widget _buildMovieItem(Results movieItem) {
     heroTag += 1;
+    movieItem.heroTag = heroTag;
     return Material(
       elevation: 15.0,
       child: InkWell(
-        onTap: () {},
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(
+              builder: (context) => MovieDetail(movie: movieItem)
+            )
+          );
+        },
         child: Hero(
-          tag: movieItem.id,
+          tag: heroTag,
           child: Image.network("${baseImagesUrl}w342${movieItem.posterPath}",
               fit: BoxFit.cover),
         ),
