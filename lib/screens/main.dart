@@ -29,6 +29,10 @@ class _MyMovieApp extends State<MyMovieApp> {
 
   int _currentIndex = 0;
 
+  //Paginacion
+  int _pageNumber = 1;
+  int _totalItems = 0;
+
   @override
   void initState() {
     super.initState();
@@ -63,10 +67,14 @@ class _MyMovieApp extends State<MyMovieApp> {
   }
 
   void _fetchUpcomingPlayingMovies() async {
-    var response = await http.get(upComingUrl);
+    var response = await http.get(
+        "${baseUrl}upcoming?api_key=$apiKey&language=en-US&page=$_pageNumber");
     var decodeJson = jsonDecode(response.body);
+    upcomingMovies == null
+        ? upcomingMovies = Movie.fromJson(decodeJson)
+        : upcomingMovies.results.addAll(Movie.fromJson(decodeJson).results);
     setState(() {
-      upcomingMovies = Movie.fromJson(decodeJson);
+      _totalItems = upcomingMovies.results.length;
     });
   }
 
@@ -89,15 +97,17 @@ class _MyMovieApp extends State<MyMovieApp> {
       elevation: 15.0,
       child: InkWell(
         onTap: () {
-          Navigator.push(context, MaterialPageRoute(
-              builder: (context) => MovieDetail(movie: movieItem)
-            )
-          );
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => MovieDetail(movie: movieItem)));
         },
         child: Hero(
           tag: heroTag,
-          child: Image.network("${baseImagesUrl}w342${movieItem.posterPath}",
-              fit: BoxFit.cover),
+          child: movieItem.posterPath != null
+              ? Image.network("${baseImagesUrl}w342${movieItem.posterPath}",
+                  fit: BoxFit.cover)
+              : Image.asset('assets/emptyfilmposter.jpg'),
         ),
       ),
     );
@@ -153,23 +163,43 @@ class _MyMovieApp extends State<MyMovieApp> {
               ),
             ),
             Flexible(
-                child: ListView(
+                child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              children: movie == null
-                  ? [Center(child: CircularProgressIndicator())]
-                  : movie.results
-                      .map((movieItem) => Padding(
-                            padding: EdgeInsets.only(left: 6.0, right: 2.0),
-                            child: _buildMovieListItem(movieItem),
-                          ))
-                      .toList(),
+              itemCount: _totalItems,
+              itemBuilder: (BuildContext context, int index) {
+                if (index >= movie.results.length - 1) {
+                  _pageNumber++;
+                  _fetchUpcomingPlayingMovies();
+                }
+                return Padding(
+                  padding: EdgeInsets.only(left: 6.0, right: 2.0),
+                  child: _buildMovieListItem(movie.results[index]),
+                );
+              },
             ))
           ],
         ),
       );
 
+/*  Widget _createListView() {
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      itemCount: _totalItems,
+      itemBuilder: (BuildContext context, int index) {
+        if (index >= movie.results.length - 1) {
+          _pageNumber++;
+          _fetchUpcomingPlayingMovies();
+        }
+        return Padding(
+          padding: EdgeInsets.only(left: 6.0, right: 2.0),
+          child: _buildMovieListItem(movie.results[index]),
+        );
+      },
+    );
+  }*/
+
   @override
-  Widget build(BuildContext context)  {
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         elevation: 0.0,
@@ -227,9 +257,9 @@ class _MyMovieApp extends State<MyMovieApp> {
         },
         body: ListView(
           children: [
-            _buildMoviesListView(upcomingMovies, 'COMING SOON'),
-            _buildMoviesListView(popularMovies, 'POPULAR MOVIES'),
-            _buildMoviesListView(topratedMovies, 'TOP RATED MOVIE'),
+            _buildMoviesListView(upcomingMovies, 'COMING SOON ($_pageNumber)'),
+            //_buildMoviesListView(popularMovies, 'POPULAR MOVIES'),
+            //_buildMoviesListView(topratedMovies, 'TOP RATED MOVIE'),
           ],
         ),
       ),
