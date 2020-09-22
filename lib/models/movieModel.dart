@@ -55,6 +55,7 @@ class Results {
   double voteAverage;
   String overview;
   String releaseDate;
+  int heroTag;
 
   Results(
       {this.popularity,
