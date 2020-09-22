@@ -29,6 +29,18 @@ class _MyMovieApp extends State<MyMovieApp> {
 
   int _currentIndex = 0;
 
+  //Paginacion Upcomming
+  int _pageNumberUpcoming = 1;
+  int _totalItemsUpcoming = 0;
+
+  //Paginacion topRated
+  int _pageNumberTopRated = 1;
+  int _totalItemsTopRated = 0;
+
+  //Paginacion popularMovies
+  int _pageNumberPopular = 1;
+  int _totalItemsPopular = 0;
+
   @override
   void initState() {
     super.initState();
@@ -46,27 +58,39 @@ class _MyMovieApp extends State<MyMovieApp> {
     });
   }
 
-  void _fetchPopularPlayingMovies() async {
-    var response = await http.get(popularUrl);
+  void _fetchUpcomingPlayingMovies() async {
+    var response = await http.get(
+        "${baseUrl}upcoming?api_key=$apiKey&language=en-US&page=$_pageNumberUpcoming");
     var decodeJson = jsonDecode(response.body);
+    upcomingMovies == null
+        ? upcomingMovies = Movie.fromJson(decodeJson)
+        : upcomingMovies.results.addAll(Movie.fromJson(decodeJson).results);
     setState(() {
-      popularMovies = Movie.fromJson(decodeJson);
+      _totalItemsUpcoming = upcomingMovies.results.length;
     });
   }
 
   void _fetchTopRatedPlayingMovies() async {
-    var response = await http.get(topRatedUrl);
+    var response = await http.get(
+        "${baseUrl}top_rated?api_key=$apiKey&language=en-US&page=$_pageNumberTopRated");
     var decodeJson = jsonDecode(response.body);
+    topratedMovies == null
+        ? topratedMovies = Movie.fromJson(decodeJson)
+        : topratedMovies.results.addAll(Movie.fromJson(decodeJson).results);
     setState(() {
-      topratedMovies = Movie.fromJson(decodeJson);
+      _totalItemsTopRated = topratedMovies.results.length;
     });
   }
 
-  void _fetchUpcomingPlayingMovies() async {
-    var response = await http.get(upComingUrl);
+  void _fetchPopularPlayingMovies() async {
+    var response = await http.get(
+        "${baseUrl}popular?api_key=$apiKey&language=en-US&page=$_pageNumberPopular");
     var decodeJson = jsonDecode(response.body);
+    popularMovies == null
+        ? popularMovies = Movie.fromJson(decodeJson)
+        : popularMovies.results.addAll(Movie.fromJson(decodeJson).results);
     setState(() {
-      upcomingMovies = Movie.fromJson(decodeJson);
+      _totalItemsPopular = popularMovies.results.length;
     });
   }
 
@@ -89,15 +113,17 @@ class _MyMovieApp extends State<MyMovieApp> {
       elevation: 15.0,
       child: InkWell(
         onTap: () {
-          Navigator.push(context, MaterialPageRoute(
-              builder: (context) => MovieDetail(movie: movieItem)
-            )
-          );
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => MovieDetail(movie: movieItem)));
         },
         child: Hero(
           tag: heroTag,
-          child: Image.network("${baseImagesUrl}w342${movieItem.posterPath}",
-              fit: BoxFit.cover),
+          child: movieItem.posterPath != null
+              ? Image.network("${baseImagesUrl}w342${movieItem.posterPath}",
+                  fit: BoxFit.cover)
+              : Image.asset('assets/emptyfilmposter.jpg'),
         ),
       ),
     );
@@ -133,7 +159,9 @@ class _MyMovieApp extends State<MyMovieApp> {
         ),
       );
 
-  Widget _buildMoviesListView(Movie movie, String movieListTitle) => Container(
+  Widget _buildMoviesListViewUpcomingMovies(
+          Movie movie, String movieListTitle) =>
+      Container(
         height: 258.0,
         padding: EdgeInsets.only(top: 10.0, bottom: 10.0),
         decoration: BoxDecoration(
@@ -153,23 +181,106 @@ class _MyMovieApp extends State<MyMovieApp> {
               ),
             ),
             Flexible(
-                child: ListView(
+                child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              children: movie == null
-                  ? [Center(child: CircularProgressIndicator())]
-                  : movie.results
-                      .map((movieItem) => Padding(
-                            padding: EdgeInsets.only(left: 6.0, right: 2.0),
-                            child: _buildMovieListItem(movieItem),
-                          ))
-                      .toList(),
+              itemCount: _totalItemsUpcoming,
+              itemBuilder: (BuildContext context, int index) {
+                if (index >= movie.results.length - 1) {
+                  _pageNumberUpcoming++;
+                  _fetchUpcomingPlayingMovies();
+                }
+                return Padding(
+                  padding: EdgeInsets.only(left: 6.0, right: 2.0),
+                  child: _buildMovieListItem(movie.results[index]),
+                );
+              },
+            ))
+          ],
+        ),
+      );
+
+  Widget _buildMoviesListViewTopRatedMovies(
+          Movie movie, String movieListTitle) =>
+      Container(
+        height: 258.0,
+        padding: EdgeInsets.only(top: 10.0, bottom: 10.0),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.4),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: EdgeInsets.only(left: 7.0, bottom: 7.0),
+              child: Text(
+                movieListTitle,
+                style: TextStyle(
+                    fontSize: 12.0,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[400]),
+              ),
+            ),
+            Flexible(
+                child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _totalItemsTopRated,
+              itemBuilder: (BuildContext context, int index) {
+                if (index >= movie.results.length - 1) {
+                  _pageNumberTopRated++;
+                  _fetchTopRatedPlayingMovies();
+                }
+                return Padding(
+                  padding: EdgeInsets.only(left: 6.0, right: 2.0),
+                  child: _buildMovieListItem(movie.results[index]),
+                );
+              },
+            ))
+          ],
+        ),
+      );
+
+  Widget _buildMoviesListViewPopularMovies(
+          Movie movie, String movieListTitle) =>
+      Container(
+        height: 258.0,
+        padding: EdgeInsets.only(top: 10.0, bottom: 10.0),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.4),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: EdgeInsets.only(left: 7.0, bottom: 7.0),
+              child: Text(
+                movieListTitle,
+                style: TextStyle(
+                    fontSize: 12.0,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[400]),
+              ),
+            ),
+            Flexible(
+                child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _totalItemsPopular,
+              itemBuilder: (BuildContext context, int index) {
+                if (index >= movie.results.length - 1) {
+                  _pageNumberPopular++;
+                  _fetchPopularPlayingMovies();
+                }
+                return Padding(
+                  padding: EdgeInsets.only(left: 6.0, right: 2.0),
+                  child: _buildMovieListItem(movie.results[index]),
+                );
+              },
             ))
           ],
         ),
       );
 
   @override
-  Widget build(BuildContext context)  {
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         elevation: 0.0,
@@ -227,9 +338,9 @@ class _MyMovieApp extends State<MyMovieApp> {
         },
         body: ListView(
           children: [
-            _buildMoviesListView(upcomingMovies, 'COMING SOON'),
-            _buildMoviesListView(popularMovies, 'POPULAR MOVIES'),
-            _buildMoviesListView(topratedMovies, 'TOP RATED MOVIE'),
+            _buildMoviesListViewUpcomingMovies(upcomingMovies, 'COMING SOON'),
+            _buildMoviesListViewTopRatedMovies(topratedMovies, 'TOP RATED'),
+            _buildMoviesListViewPopularMovies(popularMovies, 'POPULAR'),
           ],
         ),
       ),
